@@ -19,11 +19,6 @@ items.get("/items/:id", (req, res) => {
 
 items.put("/items/:id", (req, res) => {
   let id = req.params.id;
-  let found = pool
-    .query(`SELECT * FROM items WHERE id = ${id}`)
-    .then((response) => {
-      res.json(response.rows);
-    });
   let item_name = req.body.item_name;
   let item_type = req.body.item_type;
   let ambience = req.body.ambience;
@@ -33,12 +28,32 @@ items.put("/items/:id", (req, res) => {
   let location = req.body.location;
   let specifics = req.body.specifics;
   let dlc = req.body.dlc;
+  let data = [
+    item_name,
+    item_type,
+    ambience,
+    linkable,
+    dyeable,
+    cost,
+    location,
+    specifics,
+    dlc,
+  ];
   let query = `UPDATE items SET 
-    dlc = dlc
-    WHERE id = id`;
-  pool.query(query).then((response) => {
-    res.status(200);
-    res.json(req.body);
+    item_name = $1,
+    item_type = $2,
+    ambience = $3,
+    linkable = $4,
+    dyeable = $5,
+    cost = $6,
+    location = $7,
+    specifics = $8,
+    dlc = $9
+    WHERE id = ${id}
+  `;
+
+  pool.query(query, data).then((response) => {
+    res.sendStatus(200);
   });
 });
 
