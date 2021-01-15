@@ -2,11 +2,55 @@
 const express = require("express");
 const items = express.Router();
 const pool = require("./connection");
+const format = require("pg-format");
 items.get("/items", (req, res) => {
-  let query = `SELECT * FROM items ORDER BY  item_name ASC`;
-  pool.query(query).then((response) => {
-    res.json(response.rows);
-  });
+  let validAttr = [
+    "item_name",
+    "item_type",
+    "ambience",
+    "linkable",
+    "dyeable",
+    "item_cost",
+  ];
+  let keys = [];
+  let counter = 0;
+  let values = [];
+  let base = `SELECT * FROM items WHERE`;
+  let end = `ORDER BY item_name ASC`;
+  const validQueryParams = Object.keys(req.query)
+    .filter((key) => validAttr.includes(key))
+    .map((v) => {
+      const obj = {};
+      obj[v] = req.query[v];
+      keys.push(v);
+      if (v === "item_cost") {
+        values.push(parseInt(obj[v]));
+      } else {
+        values.push(obj[v]);
+      }
+      return obj;
+    });
+  if (values.length !== 0) {
+    console.log(values);
+    for (let i = 0; i < keys.length; i++) {
+      let colName = keys[i];
+      counter++;
+      base += " " + colName + " = " + "$" + `${counter}`;
+      if (counter < keys.length) {
+        base += " AND";
+      }
+    }
+    let query = base + " " + end;
+    console.log(query);
+    pool.query(query, values).then((response) => {
+      res.json(response.rows);
+    });
+  } else {
+    let query = `SELECT * FROM items ORDER BY item_name ASC`;
+    pool.query(query).then((response) => {
+      res.json(response.rows);
+    });
+  }
 });
 
 items.get("/items/:id", (req, res) => {
@@ -24,7 +68,7 @@ items.put("/items/:id", (req, res) => {
   let ambience = req.body.ambience;
   let linkable = req.body.linkable;
   let dyeable = req.body.dyeable;
-  let cost = req.body.cost;
+  let item_cost = req.body.item_cost;
   let location = req.body.location;
   let specifics = req.body.specifics;
   let dlc = req.body.dlc;
@@ -34,7 +78,7 @@ items.put("/items/:id", (req, res) => {
     ambience,
     linkable,
     dyeable,
-    cost,
+    item_cost,
     location,
     specifics,
     dlc,
@@ -45,7 +89,7 @@ items.put("/items/:id", (req, res) => {
     ambience = $3,
     linkable = $4,
     dyeable = $5,
-    cost = $6,
+    item_cost = $6,
     location = $7,
     specifics = $8,
     dlc = $9
@@ -63,7 +107,7 @@ items.post("/items", (req, res) => {
   let ambience = req.body.ambience;
   let linkable = req.body.linkable;
   let dyeable = req.body.dyeable;
-  let cost = req.body.cost;
+  let item_cost = req.body.cost;
   let location = req.body.location;
   let specifics = req.body.specifics;
   let dlc = req.body.dlc;
@@ -75,7 +119,7 @@ items.post("/items", (req, res) => {
       ambience,
       linkable,
       dyeable,
-      cost,
+      item_cost,
       location,
       specifics,
       dlc,
